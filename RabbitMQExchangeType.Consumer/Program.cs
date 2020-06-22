@@ -24,20 +24,20 @@ namespace RabbitMQExchangeType.Consumer
             {
                 using (var channel = connection.CreateModel())
                 {
-                    channel.ExchangeDeclare("direct-exchange", durable: true, type: ExchangeType.Direct);
+                    channel.ExchangeDeclare("topic-exchange", durable: true, type: ExchangeType.Topic);
 
                     var queueName = channel.QueueDeclare().QueueName;
 
-                    foreach (var item in Enum.GetNames(typeof(LogNames)))
-                    {
-                        channel.QueueBind(queueName, exchange: "direct-exchange", routingKey: item);
-                    }
+                    //string routingKey = "Warning.*.Info";
+                    string routingKey = "#.Warning";
+                    channel.QueueBind(queueName, exchange: "topic-exchange", routingKey: routingKey);
+
 
 
 
                     channel.BasicQos(prefetchSize: 0, prefetchCount: 1, false);
 
-                    Console.WriteLine("Critical ve Error Loglar bekleniyor...");
+                    Console.WriteLine("Custom Loglar bekleniyor...");
 
                     var consumer = new EventingBasicConsumer(channel);
 
@@ -50,7 +50,7 @@ namespace RabbitMQExchangeType.Consumer
                         var time = int.Parse(GetMessage(args));
                         Thread.Sleep(time);
 
-                        File.AppendAllText("logs_critical_erros.txt", log + "/n");
+                        File.AppendAllText("logs_custom_erros.txt", log + "/n");
 
 
                         Console.WriteLine("loglama bitti...");
