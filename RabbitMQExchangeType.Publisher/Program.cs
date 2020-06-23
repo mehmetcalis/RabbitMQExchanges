@@ -1,5 +1,6 @@
 ﻿using RabbitMQ.Client;
 using System;
+using System.Collections.Generic;
 using System.Text;
 
 namespace RabbitMQExchangeType.Publisher
@@ -22,28 +23,19 @@ namespace RabbitMQExchangeType.Publisher
             {
                 using (var channel = connection.CreateModel())
                 {
-                    channel.ExchangeDeclare("topic-exchange", durable: true, type: ExchangeType.Topic);
+                    channel.ExchangeDeclare("header-exchange", durable: true, type: ExchangeType.Headers);
 
-                    Array log_name_array = Enum.GetValues(typeof(LogNames));
+                    Dictionary<string, object> headers = new Dictionary<string, object>();
 
-                    for (int i = 1; i < 11; i++)
-                    {
+                    headers.Add("format", "pdf");
+                    headers.Add("shape", "A4");
 
-                        Random rnd = new Random();
-                        LogNames log1 = (LogNames)log_name_array.GetValue(rnd.Next(log_name_array.Length));
-                        LogNames log2 = (LogNames)log_name_array.GetValue(rnd.Next(log_name_array.Length));
-                        LogNames log3 = (LogNames)log_name_array.GetValue(rnd.Next(log_name_array.Length));
+                    var properties = channel.CreateBasicProperties();
+                    properties.Headers = headers;
 
-                        var bodyByte = Encoding.UTF8.GetBytes($"log={log1.ToString()}-{log2.ToString()}-{log3.ToString()}");
-                        string routingKey = $"{ log1}.{log2}.{log3}";
+                    channel.BasicPublish("header-exchange", string.Empty, properties, Encoding.UTF8.GetBytes("Header mesajım"));
 
-                        var properties = channel.CreateBasicProperties();
-                        properties.Persistent = true;
-
-                        channel.BasicPublish("topic-exchange", routingKey: routingKey, properties, bodyByte);
-
-                        Console.WriteLine($"Log Mesajınız gönderilmiştir => mesaj: {routingKey}");
-                    }
+                    
                 }
                 Console.WriteLine("Çıkış yapmak için tıklanıyınız.");
                 Console.ReadLine();

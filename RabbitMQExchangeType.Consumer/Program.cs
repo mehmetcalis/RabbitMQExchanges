@@ -1,6 +1,7 @@
 ﻿using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -24,36 +25,28 @@ namespace RabbitMQExchangeType.Consumer
             {
                 using (var channel = connection.CreateModel())
                 {
-                    channel.ExchangeDeclare("topic-exchange", durable: true, type: ExchangeType.Topic);
+                    channel.ExchangeDeclare("header-exchange", durable: true, type: ExchangeType.Headers);
 
-                    var queueName = channel.QueueDeclare().QueueName;
+                    channel.QueueDeclare("Kuyruk1", false, false, false, null);
 
-                    //string routingKey = "Warning.*.Info";
-                    string routingKey = "#.Warning";
-                    channel.QueueBind(queueName, exchange: "topic-exchange", routingKey: routingKey);
+                    Dictionary<string, object> headers = new Dictionary<string, object>();
+
+                    headers.Add("format", "pdf");
+                    headers.Add("shape", "A4");
+                    headers.Add("x-match", "any");
 
 
-
-
-                    channel.BasicQos(prefetchSize: 0, prefetchCount: 1, false);
-
-                    Console.WriteLine("Custom Loglar bekleniyor...");
+                    channel.QueueBind("Kuyruk1", "header-exchange", string.Empty, headers);
 
                     var consumer = new EventingBasicConsumer(channel);
-
-                    channel.BasicConsume(queueName, false, consumer);
+                    channel.BasicConsume("Kuyruk1", false, consumer);
 
                     consumer.Received += (model, ea) =>
                     {
                         var log = Encoding.UTF8.GetString(ea.Body.ToArray());
-                        Console.WriteLine("log alındı: " + log);
-                        var time = int.Parse(GetMessage(args));
-                        Thread.Sleep(time);
 
-                        File.AppendAllText("logs_custom_erros.txt", log + "/n");
-
-
-                        Console.WriteLine("loglama bitti...");
+                        Console.WriteLine($"gelen mesaj: {log}");
+                     
 
                         channel.BasicAck(ea.DeliveryTag, false);
                     };
